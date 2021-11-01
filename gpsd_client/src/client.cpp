@@ -12,7 +12,7 @@ using namespace sensor_msgs;
 
 class GPSDClient {
   public:
-    GPSDClient() : privnode("~"), gps(NULL), use_gps_time(true), check_fix_by_variance(true), frame_id("gps") {}
+    GPSDClient() : privnode("~"), gps(NULL), use_gps_time(true), check_fix_by_variance(true), frame_id("gps"), last_fix_time_(ros::Time::now()) {}
 
     bool start() {
       gps_fix_pub = node.advertise<GPSFix>("extended_fix", 1);
@@ -80,6 +80,7 @@ class GPSDClient {
     bool use_gps_time;
     bool check_fix_by_variance;
     std::string frame_id;
+    ros::Time last_fix_time_;
 
     void process_data(struct gps_data_t* p) {
       if (p == NULL)
@@ -148,13 +149,13 @@ class GPSDClient {
 #endif
       }
 
-      if ((p->status & STATUS_FIX) && !(check_fix_by_variance && std::isnan(p->fix.epx))) {
+      if ((p->fix.status & STATUS_FIX) && !(check_fix_by_variance && std::isnan(p->fix.epx))) {
         status.status = 0; // FIXME: gpsmm puts its constants in the global
                            // namespace, so `GPSStatus::STATUS_FIX' is illegal.
 
 // STATUS_DGPS_FIX was removed in API version 6 but re-added afterward
 #if GPSD_API_MAJOR_VERSION != 6
-        if (p->status & STATUS_DGPS_FIX)
+        if (p->fix.status & STATUS_DGPS_FIX)
           status.status |= 18; // same here
 #endif
 
@@ -222,13 +223,20 @@ class GPSDClient {
         fix->header.stamp = ros::Time::now();
       }
 
+        //if (fix->header.stamp.toSec() <= last_fix_time_.toSec())
+        if (fix->header.stamp == last_fix_time_)
+            return;
+        else
+            last_fix_time_ = fix->header.stamp;
+
+      
       fix->header.frame_id = frame_id;
 
       /* gpsmm pollutes the global namespace with STATUS_,
        * so we need to use the ROS message's integer values
        * for status.status
        */
-      switch (p->status) {
+      switch (p->fix.status) {
         case STATUS_NO_FIX:
           fix->status.status = -1; // NavSatStatus::STATUS_NO_FIX;
           break;
