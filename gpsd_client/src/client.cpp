@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <ros/console.h>
 #include <gps_common/GPSFix.h>
 #include <gps_common/GPSStatus.h>
 #include <sensor_msgs/NavSatFix.h>
@@ -220,6 +221,7 @@ class GPSDClient {
       NavSatFixPtr fix(new NavSatFix);
 
       /* TODO: Support SBAS and other GBAS. */
+     // ROS_INFO_STREAM("GPSD VER: "<< GPSD_API_MAJOR_VERSION);
 
 #if GPSD_API_MAJOR_VERSION >= 9
       if (use_gps_time && (p->online.tv_sec || p->online.tv_nsec)) {
@@ -235,7 +237,8 @@ class GPSDClient {
 
         // Checks for duplicate msgs and publishes navsat fix once per msg.
         if (fix->header.stamp == last_fix_time_)
-            return;
+            //ROS_INFO_STREAM("got duplicate msg");
+	    return;
         else
             last_fix_time_ = fix->header.stamp;
       
