@@ -13,7 +13,7 @@ using namespace sensor_msgs;
 
 class GPSDClient {
   public:
-    GPSDClient() : privnode("~"), gps(NULL), use_gps_time(true), check_fix_by_variance(true), frame_id("gps"), last_fix_time_(ros::Time::now()) {}
+    GPSDClient() : privnode("~"), gps(NULL), use_gps_time(true), check_fix_by_variance(false), frame_id("gps"), last_fix_time_(ros::Time::now()) {}
 
     bool start() {
       gps_fix_pub = node.advertise<GPSFix>("extended_fix", 1);
